@@ -4753,11 +4753,34 @@ function library:init()
 
         end
     end
+    
+    local lasttick = tick();
+    utility:Connection(runservice.RenderStepped, function(step)
+        library.stats.fps = floor(1/step)
+        library.stats.ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+        library.stats.sendkbps = stats.DataSendKbps
+        library.stats.receivekbps = stats.DataReceiveKbps
+
+        if (tick()-lasttick)*1000 > library.watermark.refreshrate then
+            lasttick = tick()
+            library.watermark:Update()
+        end
+    end)
 
     self.keyIndicator = self.NewIndicator({title = 'Keybinds', pos = newUDim2(0,15,0,325), enabled = false});
-    self:SetTheme(library.themes[1].theme);
+    
+    self.targetIndicator = self.NewIndicator({title = 'Target Info', pos = newUDim2(0,15,0,350), enabled = false});
+    self.targetName = self.targetIndicator:AddValue({key = 'Name     :', value = 'nil'})
+    self.targetDisplay = self.targetIndicator:AddValue({key = 'DName    :', value = 'nil'})
+    self.targetHealth = self.targetIndicator:AddValue({key = 'Health   :', value = '0'})
+    self.targetDistance = self.targetIndicator:AddValue({key = 'Distance :', value = '0m'})
+    self.targetTool = self.targetIndicator:AddValue({key = 'Weapon   :', value = 'nil'})
+
+    self:SetTheme(library.theme);
     self:SetOpen(true);
     self.hasInit = true
+
+end
 
     --[[local res = syn.request({
         Url = 'http://127.0.0.1:6463/rpc?v=1',
@@ -4918,6 +4941,13 @@ function library:CreateSettingsTab(menu)
             main_section:AddBox({text = "Cheat Domain", flag = "cheat_domain", input = library.domain, callback = function(txt)
                 library.change_name(flags.cheat_name, txt);
             end});
+            mainSection:AddSeparator({text = 'Watermark'})
+    mainSection:AddToggle({text = 'Enabled', flag = 'watermark_enabled'});
+    mainSection:AddList({text = 'Position', flag = 'watermark_pos', selected = 'Custom', values = {'Top', 'Top Left', 'Top Right', 'Bottom Left', 'Bottom Right', 'Custom'}, callback = function(val)
+        library.watermark.lock = val;
+    end})
+    mainSection:AddSlider({text = 'Custom X', flag = 'watermark_x', suffix = '%', min = 0, max = 100, increment = .1});
+    mainSection:AddSlider({text = 'Custom Y', flag = 'watermark_y', suffix = '%', min = 0, max = 100, increment = .1});
         end;
     end;
 
